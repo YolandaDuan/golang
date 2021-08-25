@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 )
 
 type Page struct {
@@ -29,4 +30,6 @@ func main() {
 	p1.save()
 	p2, _ := loadPage("TestPage")
 	fmt.Println(string(p2.Body))
+
+	os.Remove("Test.txt") //remove a single file
 }
