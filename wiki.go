@@ -16,6 +16,10 @@ func (p *Page) save() error {
 	return ioutil.WriteFile(filename, p.Body, 0600)
 }
 
+func remove() {
+	os.Remove("rmPage2.txt") //remove a single file
+}
+
 func loadPage(title string) (*Page, error) {
 	filename := title + ".txt"
 	body, err := ioutil.ReadFile(filename)
@@ -26,10 +30,9 @@ func loadPage(title string) (*Page, error) {
 }
 
 func main() {
-	p1 := &Page{Title: "gitPage", Body: []byte("this is a git update page by yolanda")}
+	p1 := &Page{Title: "rmPage2", Body: []byte("2222")}
 	p1.save()
-	p2, _ := loadPage("TestPage")
+	p2, _ := loadPage("rmPage2")
 	fmt.Println(string(p2.Body))
-
-	os.Remove("Test.txt") //remove a single file
+	remove()
 }
