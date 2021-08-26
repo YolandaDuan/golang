@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 )
 
@@ -17,7 +19,7 @@ func (p *Page) save() error {
 }
 
 func remove() {
-	os.Remove("rmPage2.txt") //remove a single file
+	os.Remove("rmPage2.txt") //remove a single file rmPage2.txt
 }
 
 func loadPage(title string) (*Page, error) {
@@ -29,10 +31,17 @@ func loadPage(title string) (*Page, error) {
 	return &Page{Title: title, Body: body}, nil
 }
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[3:])
+}
+
 func main() {
 	p1 := &Page{Title: "rmPage2", Body: []byte("2222")}
 	p1.save()
 	p2, _ := loadPage("rmPage2")
 	fmt.Println(string(p2.Body))
 	remove()
+
+	http.HandleFunc("/", handler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
