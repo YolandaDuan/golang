@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 )
 
 type Page struct {
@@ -15,6 +17,7 @@ type Page struct {
 }
 
 var templates = template.Must(template.ParseFiles("edit.html", "view.html"))
+var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
 func (p *Page) save() error {
 	filename := p.Title + ".txt"
@@ -22,7 +25,9 @@ func (p *Page) save() error {
 }
 
 func remove() {
-	os.Remove("rmPage2.txt") //remove a single file rmPage2.txt
+	os.Remove("gitPage.txt") //remove a single file
+	os.Remove("new.txt")
+	os.Remove("rainPage.txt")
 }
 
 func loadPage(title string) (*Page, error) {
@@ -32,6 +37,15 @@ func loadPage(title string) (*Page, error) {
 		return nil, err
 	}
 	return &Page{Title: title, Body: body}, nil
+}
+
+func getTitle(w http.ResponseWriter, r *http.Request) (string, error) { // validation for page title
+	m := validPath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		http.NotFound(w, r)
+		return "", errors.New("invalid Page Title")
+	}
+	return m[2], nil
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +60,10 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Path[len("/view/"):]
+	title, err := getTitle(w, r)
+	if err != nil {
+		return
+	}
 	p, err := loadPage(title)
 	if err != nil {
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
@@ -56,7 +73,13 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Path[len("/edit/"):]
+	title, err := getTitle(w, r)
+	if err != nil {
+		return
+	}
+	if err != nil {
+		return
+	}
 	p, err := loadPage(title)
 	if err != nil {
 		p = &Page{Title: title}
@@ -65,10 +88,13 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) { // saving pages
-	title := r.URL.Path[len("/save/"):]
+	title, err := getTitle(w, r)
+	if err != nil {
+		return
+	}
 	body := r.FormValue("body")
 	p := &Page{Title: title, Body: []byte(body)}
-	err := p.save()
+	err = p.save()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -79,9 +105,9 @@ func saveHandler(w http.ResponseWriter, r *http.Request) { // saving pages
 func main() {
 	p1 := &Page{Title: "rainPage", Body: []byte("it's a raining day")}
 	p1.save()
-	p2, _ := loadPage("rainPage")
+	p2, _ := loadPage("TestPage")
 	fmt.Println(string(p2.Body))
-	// remove()
+	remove()
 
 	http.HandleFunc("/view/", viewHandler)
 	http.HandleFunc("/edit/", editHandler)
